@@ -1,0 +1,39 @@
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# PyInstaller / Build outputs
+build/
+dist/
+*.spec
+
+# Media directories (CRITICAL: prevents uploading private images/videos)
+encrypted_files/
+decrypted_output/
+fixed_files/
+error/
+*.lsa
+*.lsav
+*.jpg
+*.jpeg
+*.png
+*.mp4
+*.mov
+
+# IDE / Editor configuration
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
