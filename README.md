@@ -1,51 +1,104 @@
 # Xiaomi LSA / LSAV Media Restorer
 
-An offline desktop GUI tool and batch script to decrypt and restore hidden `.lsa` (photos) and `.lsav` (videos) files exported from Xiaomi / POCO devices running MIUI or HyperOS.
+An offline desktop GUI tool that decrypts and restores hidden `.lsa` (photos) and `.lsav` (videos) files exported from Xiaomi and POCO devices running MIUI or HyperOS.
 
 ## Overview
 
-When photos and videos are placed into Xiaomi's Private Album, they are encrypted locally using AES-128 in CTR mode:
-- **`.lsa` (Photos):** Entire file stream encrypted using standard gallery keystore signatures.
-- **`.lsav` (Videos):** Header-only encrypted (first 1,024 bytes) to ensure efficient media streaming.
+Photos and videos in Xiaomi's Private Album are stored in encrypted `.lsa` and `.lsav` containers. The tool attempts to restore them using the AES-128 CTR key and counter initialization values defined in the application:
 
-This utility restores corrupted or orphaned files back to viewable `.jpg`, `.png`, `.mp4`, or `.mov` files without requiring an internet connection.
+- **`.lsa` (Photos):** Entire file stream is encrypted using the system gallery signature keystore.
+- **`.lsav` (Videos):** Only the first 1,024 bytes (header block) are decrypted, while the remaining bytes are copied unchanged.
+
+The tool restores files whose headers and payload are valid after decryption. It works offline and does not upload, download, or modify the original source files.
 
 ## Prerequisites
 
 - Python 3.9+
-- Windows, macOS, or Linux
+- Compatible with Windows, macOS, and Linux
 
 ## Installation
 
 1. Clone this repository:
    ```bash
-   git clone [https://github.com/your-username/your-repo-name.git](https://github.com/your-username/your-repo-name.git)
-   cd your-repo-name
+   git clone https://github.com/OsamaShamlawi/xiaomi-lsa-lsva-media-restorer.git
+   cd xiaomi-lsa-lsva-media-restorer
+   ```
 
-Install dependencies:
+2. Install the required dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-Bash
-pip install -r requirements.txt
-Usage
-GUI Application
-Launch the desktop interface:
+## Usage
 
-Bash
-python app.py
-Select your source directory containing the .lsa and .lsav files.
+### 1. Graphical User Interface (GUI)
 
-Select your target export folder.
+Launch the desktop application:
 
-Click Start Decryption.
+```bash
+python decryptsvl.py
+```
 
-Build Standalone Executable (Windows)
-Bash
-pyinstaller --noconsole --onefile app.py
-The compiled binary will be located in the dist/ directory.
+- Click **Browse** to select the folder containing your `.lsa` and `.lsav` files.
+- Select your desired destination folder.
+- Keep **Organize into 'photos' and 'videos' subfolders** checked if you want them automatically categorized.
+- Click **Start Decryption**.
 
-License
-MIT
+### 2. Standalone Windows Executable (.exe)
 
+To compile the app into a portable Windows executable:
 
----
+```bash
+pip install pyinstaller
+pyinstaller --noconsole --onefile decryptsvl.py
+```
 
+The compiled binary will be placed inside the `dist/` directory.
+
+## File Organization Structure
+
+When the sorting feature is enabled, restored items are placed into:
+
+- `decrypted_output/photos/`: `.jpg`, `.jpeg`, `.png`, `.webp`, `.heic`
+- `decrypted_output/videos/`: `.mp4`, `.mkv`, `.mov`, `.3gp`, `.webm`
+
+## Why Some Files Fail Recovery
+
+When the tool processes `.lsa` and `.lsav` files, it validates the file size, decrypts the payload, and checks the resulting data against known media signatures. Files that fail a check remain in the source folder; the tool does not currently create or move files into an `error` directory.
+
+Common causes include:
+
+### 1. File Size is 0 KB or Under 16 Bytes
+
+The file contains zero bytes or only a few bytes of metadata or trailing data. If the original media was removed, cleared, or replaced by an incomplete placeholder, there may be no encrypted payload to recover.
+
+### 2. Cloud-Only or Unavailable Files
+
+The file has an `.lsa` or `.lsav` extension but contains only zeros or a placeholder instead of locally available media data. If a complete copy was never downloaded or cached, restoration is not possible.
+
+### 3. Incomplete Transfers or Truncated Files
+
+Interruptions during MTP or USB transfers, interrupted downloads, or copying from an unavailable file system can leave a truncated file. For videos, an incomplete stream may still be missing important container information, such as its index or metadata, even when the encrypted header can be processed.
+
+### 4. Invalid Media Headers After Decryption
+
+The script decrypts the file and checks for recognized media signatures. The file may fail validation if:
+
+- It was encrypted with a different device-specific or firmware-specific key.
+- It was already decrypted and is decrypted again.
+- It is not a supported media file despite using an `.lsa` or `.lsav` extension.
+- The source file is damaged or was copied incorrectly.
+
+The tool uses `filetype.guess()` for format detection and checks JPEG signatures and MP4/MOV `ftyp` signatures as fallbacks.
+
+### 5. Storage Sector Corruption or Bit Rot
+
+A file may have a normal size while still containing corrupted or partially overwritten data. AES-CTR decryption can cause corrupted ciphertext to produce corrupted plaintext.
+
+## Code Documentation & Breakdown
+
+For a detailed breakdown of the functions, cryptographic cipher, UI elements, and file handlers, see [`code_explain.md`](code_explain.md).
+
+## License
+
+Distributed under the MIT License. See [LICENSE.md](LICENSE.md) for more information.
